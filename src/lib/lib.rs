@@ -1,2 +1,2 @@
-pub mod rect;
 pub mod map;
+pub mod rect;

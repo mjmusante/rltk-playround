@@ -1,9 +1,9 @@
-use rltk::{GameState, Rltk, VirtualKeyCode, RGB };
+use rltk::{GameState, Rltk, VirtualKeyCode, RGB};
 use specs::prelude::*;
 use specs_derive::Component;
 use std::cmp::{max, min};
 
-use blast::map::{ Map, TileType };
+use blast::map::{Map, TileType};
 
 #[derive(Component, Debug)]
 struct Player {}

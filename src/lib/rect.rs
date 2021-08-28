@@ -7,7 +7,12 @@ pub struct Rect {
 
 impl Rect {
     pub fn new(lft: i32, top: i32, wid: i32, hgt: i32) -> Rect {
-        Rect { top, lft, bot: top+hgt, rht: lft+wid }
+        Rect {
+            top,
+            lft,
+            bot: top + hgt,
+            rht: lft + wid,
+        }
     }
 
     pub fn intersect(&self, other: &Rect) -> bool {
