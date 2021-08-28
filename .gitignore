@@ -1,0 +1,3 @@
+/target
+wasm/hello.js
+wasm/hello_bg.wasm
