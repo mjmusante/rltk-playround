@@ -150,11 +150,13 @@ fn main() -> rltk::BError {
     gs.ecs.register::<LeftMover>();
     gs.ecs.register::<Player>();
     gs.ecs.register::<Viewshed>();
-    gs.ecs.insert(Map::new_map());
+    let (map, room) = Map::new_map();
+    let (px, py) = room.center();
+    gs.ecs.insert(map);
 
     gs.ecs
         .create_entity()
-        .with(Position { x: 40, y: 25 })
+        .with(Position { x: px, y: py })
         .with(Renderable {
             glyph: rltk::to_cp437('@'),
             fg: RGB::named(rltk::YELLOW),

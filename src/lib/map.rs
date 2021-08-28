@@ -48,13 +48,14 @@ impl Map {
         }
     }
 
-    pub fn new_map() -> Map {
+    pub fn new_map() -> (Map, Rect) {
         let mut map = Map {
             tiles: vec![TileType::Wall; 80 * 50],
             rooms: Vec::new(),
             width: 80,
             height: 50,
         };
+        let mut first_room = Rect::new(0, 0, 0, 0);
 
         const MAX_ROOMS: i32 = 30;
         const MIN_SIZE: i32 = 6;
@@ -88,12 +89,14 @@ impl Map {
                         map.apply_vertical_tunnel(prev_y, new_y, prev_x);
                         map.apply_horizontal_tunnel(prev_x, new_x, new_y);
                     }
+                } else {
+                    first_room = new_room.clone();
                 }
 
                 map.rooms.push(new_room);
             }
         }
-        map
+        (map, first_room)
     }
 }
 
