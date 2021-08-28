@@ -1,42 +1,54 @@
-use rltk::{GameState, Rltk, VirtualKeyCode, RGB};
+use rltk::{GameState, Rltk, VirtualKeyCode, RGB, Point};
 use specs::prelude::*;
 use specs_derive::Component;
 use std::cmp::{max, min};
 
+use blast::{Position, Viewshed};
 use blast::map::{Map, TileType};
+use blast::visibility_system::VisibilitySystem;
 
 #[derive(Component, Debug)]
 struct Player {}
 
-fn draw_map(map: &Map, ctx: &mut Rltk) {
-    let mut y = 0;
-    let mut x = 0;
-    for tile in map.tiles.iter() {
-        match tile {
-            TileType::Floor => {
-                ctx.set(
-                    x,
-                    y,
-                    RGB::from_f32(0.5, 0.5, 0.5),
-                    RGB::from_f32(0., 0., 0.),
-                    rltk::to_cp437('.'),
-                );
-            }
-            TileType::Wall => {
-                ctx.set(
-                    x,
-                    y,
-                    RGB::from_f32(0.0, 1.0, 0.0),
-                    RGB::from_f32(0., 0., 0.),
-                    rltk::to_cp437('#'),
-                );
-            }
-        }
+fn draw_map(ecs: &World, ctx: &mut Rltk) {
+    let mut viewsheds = ecs.write_storage::<Viewshed>();
+    let mut players = ecs.write_storage::<Player>();
+    let map = ecs.fetch::<Map>();
 
-        x += 1;
-        if x > 79 {
-            x = 0;
-            y += 1;
+    for (_player, viewshed) in (&mut players, &mut viewsheds).join() {
+        let mut y = 0;
+        let mut x = 0;
+        for tile in map.tiles.iter() {
+            let pt = Point::new(x, y);
+            if viewshed.visible_tiles.contains(&pt) {
+                match tile {
+                    TileType::Floor => {
+                        ctx.set(
+                            x,
+                            y,
+                            RGB::from_f32(0.5, 0.5, 0.5),
+                            RGB::from_f32(0., 0., 0.),
+                            rltk::to_cp437('.'),
+                        );
+                    }
+                    TileType::Wall => {
+                        ctx.set(
+                            x,
+                            y,
+                            RGB::from_f32(0.0, 1.0, 0.0),
+                            RGB::from_f32(0., 0., 0.),
+                            rltk::to_cp437('#'),
+                        );
+                    }
+                }
+            }
+
+            x += 1;
+            if x > 79 {
+                x = 0;
+                y += 1;
+            }
+
         }
     }
 }
@@ -67,12 +79,6 @@ fn player_input(gs: &mut State, ctx: &mut Rltk) {
             _ => (),
         },
     }
-}
-
-#[derive(Component)]
-struct Position {
-    x: i32,
-    y: i32,
 }
 
 #[derive(Component)]
@@ -110,8 +116,7 @@ impl GameState for State {
         self.run_systems();
         ctx.cls();
 
-        let map = self.ecs.fetch::<Map>();
-        draw_map(&map, ctx);
+        draw_map(&self.ecs, ctx);
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
@@ -124,8 +129,12 @@ impl GameState for State {
 
 impl State {
     fn run_systems(&mut self) {
+        let mut vis = VisibilitySystem{};
+        vis.run_now(&self.ecs);
+
         let mut lw = LeftWalker {};
         lw.run_now(&self.ecs);
+
         self.ecs.maintain();
     }
 }
@@ -140,6 +149,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<LeftMover>();
     gs.ecs.register::<Player>();
+    gs.ecs.register::<Viewshed>();
     gs.ecs.insert(Map::new_map());
 
     gs.ecs
@@ -151,6 +161,7 @@ fn main() -> rltk::BError {
             bg: RGB::named(rltk::BLACK),
         })
         .with(Player {})
+        .with(Viewshed { visible_tiles : Vec::new(), range: 8})
         .build();
 
     for i in 0..10 {
