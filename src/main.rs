@@ -1,55 +1,46 @@
-use rltk::{GameState, Rltk, VirtualKeyCode, RGB, Point};
+use rltk::{GameState, Rltk, VirtualKeyCode, RGB};
 use specs::prelude::*;
 use specs_derive::Component;
 use std::cmp::{max, min};
 
-use blast::{Position, Viewshed};
+use blast::{Position, Viewshed, Player};
 use blast::map::{Map, TileType};
 use blast::visibility_system::VisibilitySystem;
 
-#[derive(Component, Debug)]
-struct Player {}
-
 fn draw_map(ecs: &World, ctx: &mut Rltk) {
-    let mut viewsheds = ecs.write_storage::<Viewshed>();
-    let mut players = ecs.write_storage::<Player>();
     let map = ecs.fetch::<Map>();
-
-    for (_player, viewshed) in (&mut players, &mut viewsheds).join() {
-        let mut y = 0;
-        let mut x = 0;
-        for tile in map.tiles.iter() {
-            let pt = Point::new(x, y);
-            if viewshed.visible_tiles.contains(&pt) {
-                match tile {
-                    TileType::Floor => {
-                        ctx.set(
-                            x,
-                            y,
-                            RGB::from_f32(0.5, 0.5, 0.5),
-                            RGB::from_f32(0., 0., 0.),
-                            rltk::to_cp437('.'),
-                        );
-                    }
-                    TileType::Wall => {
-                        ctx.set(
-                            x,
-                            y,
-                            RGB::from_f32(0.0, 1.0, 0.0),
-                            RGB::from_f32(0., 0., 0.),
-                            rltk::to_cp437('#'),
-                        );
-                    }
+    let mut y = 0;
+    let mut x = 0;
+    for (idx, tile) in map.tiles.iter().enumerate() {
+        if map.revealed_tiles[idx] {
+            match tile {
+                TileType::Floor => {
+                    ctx.set(
+                        x,
+                        y,
+                        RGB::from_f32(0.5, 0.5, 0.5),
+                        RGB::from_f32(0., 0., 0.),
+                        rltk::to_cp437('.'),
+                    );
+                }
+                TileType::Wall => {
+                    ctx.set(
+                        x,
+                        y,
+                        RGB::from_f32(0.0, 1.0, 0.0),
+                        RGB::from_f32(0., 0., 0.),
+                        rltk::to_cp437('#'),
+                    );
                 }
             }
-
-            x += 1;
-            if x > 79 {
-                x = 0;
-                y += 1;
-            }
-
         }
+
+        x += 1;
+        if x > 79 {
+            x = 0;
+            y += 1;
+        }
+
     }
 }
 
