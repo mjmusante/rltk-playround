@@ -15,6 +15,7 @@ pub struct Map {
     pub width: i32,
     pub height: i32,
     pub revealed_tiles : Vec<bool>,
+    pub visible_tiles : Vec<bool>,
 }
 
 impl Map {
@@ -56,6 +57,7 @@ impl Map {
             width: 80,
             height: 50,
             revealed_tiles: vec![false; 80 * 50],
+            visible_tiles: vec![false; 80 * 50],
         };
         let mut first_room = Rect::new(0, 0, 0, 0);
 

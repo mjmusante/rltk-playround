@@ -22,9 +22,11 @@ impl<'a> System<'a> for VisibilitySystem {
                 viewshed.visible_tiles.retain(|p| p.x >= 0 && p.x < map.width && p.y >= 0 && p.y < map.height);
 
                 if player.get(ent).is_some() {
+                    for t in map.visible_tiles.iter_mut() { *t = false; }
                     for vis in viewshed.visible_tiles.iter() {
                         let idx = map.xy_idx(vis.x, vis.y);
                         map.revealed_tiles[idx] = true;
+                        map.visible_tiles[idx] = true;
                     }
                 }
             }
