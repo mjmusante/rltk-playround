@@ -15,18 +15,19 @@ impl<'a> System<'a> for VisibilitySystem {
     fn run(&mut self, data : Self::SystemData) {
         let (mut map, entities, mut viewshed, pos, player) = data;
         for (ent, viewshed, pos) in (&entities, &mut viewshed, &pos).join() {
-            viewshed.visible_tiles.clear();
-            viewshed.visible_tiles = field_of_view(Point::new(pos.x, pos.y), viewshed.range, &*map);
-            viewshed.visible_tiles.retain(|p| p.x >= 0 && p.x < map.width && p.y >= 0 && p.y < map.height);
+            if viewshed.dirty {
+                viewshed.dirty = false;
+                viewshed.visible_tiles.clear();
+                viewshed.visible_tiles = field_of_view(Point::new(pos.x, pos.y), viewshed.range, &*map);
+                viewshed.visible_tiles.retain(|p| p.x >= 0 && p.x < map.width && p.y >= 0 && p.y < map.height);
 
-            if player.get(ent).is_some() {
-                for vis in viewshed.visible_tiles.iter() {
-                    let idx = map.xy_idx(vis.x, vis.y);
-                    map.revealed_tiles[idx] = true;
+                if player.get(ent).is_some() {
+                    for vis in viewshed.visible_tiles.iter() {
+                        let idx = map.xy_idx(vis.x, vis.y);
+                        map.revealed_tiles[idx] = true;
+                    }
                 }
             }
         }
     }
 }
-
-
