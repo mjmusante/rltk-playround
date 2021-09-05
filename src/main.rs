@@ -3,13 +3,16 @@ use specs::prelude::*;
 use specs_derive::Component;
 use std::cmp::{max, min};
 
-use blast::{Position, Viewshed, Player, Monster};
 use blast::map::{Map, TileType};
-use blast::monster_ai_system::{MonsterAI};
+use blast::monster_ai_system::MonsterAI;
 use blast::visibility_system::VisibilitySystem;
+use blast::{Monster, Player, Position, Viewshed};
 
 #[derive(PartialEq, Copy, Clone)]
-pub enum RunState { Paused, Running }
+pub enum RunState {
+    Paused,
+    Running,
+}
 
 fn draw_map(ecs: &World, ctx: &mut Rltk) {
     let map = ecs.fetch::<Map>();
@@ -17,20 +20,14 @@ fn draw_map(ecs: &World, ctx: &mut Rltk) {
     let mut x = 0;
     for (idx, tile) in map.tiles.iter().enumerate() {
         if map.revealed_tiles[idx] {
-            let (glyph, mut fg) =
-            match tile {
-                TileType::Floor => (
-                        rltk::to_cp437('.'),
-                        RGB::from_f32(0.5, 0.5, 0.5),
-                    ),
-                TileType::Wall => (
-                        rltk::to_cp437('#'),
-                        RGB::from_f32(0.0, 1.0, 0.0),
-                    ),
+            let (glyph, mut fg) = match tile {
+                TileType::Floor => (rltk::to_cp437('.'), RGB::from_f32(0.5, 0.5, 0.5)),
+                TileType::Wall => (rltk::to_cp437('#'), RGB::from_f32(0.0, 1.0, 0.0)),
             };
-            if !map.visible_tiles[idx] { fg = fg.to_greyscale(); }
+            if !map.visible_tiles[idx] {
+                fg = fg.to_greyscale();
+            }
             ctx.set(x, y, fg, RGB::from_f32(0., 0., 0.), glyph);
-
         }
 
         x += 1;
@@ -38,7 +35,6 @@ fn draw_map(ecs: &World, ctx: &mut Rltk) {
             x = 0;
             y += 1;
         }
-
     }
 }
 
@@ -63,14 +59,25 @@ fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     match ctx.key {
         None => RunState::Paused,
         Some(key) => match key {
-            VirtualKeyCode::Left => { try_move_player(-1, 0, &mut gs.ecs); RunState::Running },
-            VirtualKeyCode::Right => { try_move_player(1, 0, &mut gs.ecs); RunState::Running },
-            VirtualKeyCode::Up => { try_move_player(0, -1, &mut gs.ecs); RunState::Running },
-            VirtualKeyCode::Down => { try_move_player(0, 1, &mut gs.ecs); RunState::Running },
+            VirtualKeyCode::Left => {
+                try_move_player(-1, 0, &mut gs.ecs);
+                RunState::Running
+            }
+            VirtualKeyCode::Right => {
+                try_move_player(1, 0, &mut gs.ecs);
+                RunState::Running
+            }
+            VirtualKeyCode::Up => {
+                try_move_player(0, -1, &mut gs.ecs);
+                RunState::Running
+            }
+            VirtualKeyCode::Down => {
+                try_move_player(0, 1, &mut gs.ecs);
+                RunState::Running
+            }
             _ => RunState::Paused,
         },
     }
-
 }
 
 #[derive(Component)]
@@ -84,7 +91,7 @@ struct Renderable {
 
 struct State {
     ecs: World,
-    pub runstate : RunState,
+    pub runstate: RunState,
 }
 
 impl GameState for State {
@@ -114,7 +121,7 @@ impl GameState for State {
 
 impl State {
     fn run_systems(&mut self) {
-        let mut vis = VisibilitySystem{};
+        let mut vis = VisibilitySystem {};
         vis.run_now(&self.ecs);
 
         let mut mob = MonsterAI {};
@@ -129,8 +136,9 @@ fn main() -> rltk::BError {
     let context = RltkBuilder::simple80x50()
         .with_title("Roguelike Tutorial")
         .build()?;
-    let mut gs = State { ecs: World::new(),
-        runstate : RunState::Running,
+    let mut gs = State {
+        ecs: World::new(),
+        runstate: RunState::Running,
     };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
@@ -147,18 +155,25 @@ fn main() -> rltk::BError {
         let glyph = match rng.roll_dice(1, 2) {
             1 => rltk::to_cp437('g'),
             2 => rltk::to_cp437('o'),
-            _ => { panic!("invalid roll"); }
+            _ => {
+                panic!("invalid roll");
+            }
         };
 
-        gs.ecs.create_entity()
-            .with(Position {x, y})
+        gs.ecs
+            .create_entity()
+            .with(Position { x, y })
             .with(Renderable {
                 glyph: glyph,
                 fg: RGB::named(rltk::RED),
                 bg: RGB::named(rltk::BLACK),
             })
-            .with(Viewshed{ visible_tiles : Vec::new(), range: 8, dirty: true })
-            .with(Monster{})
+            .with(Viewshed {
+                visible_tiles: Vec::new(),
+                range: 8,
+                dirty: true,
+            })
+            .with(Monster {})
             .build();
     }
     gs.ecs.insert(map);
@@ -172,7 +187,11 @@ fn main() -> rltk::BError {
             bg: RGB::named(rltk::BLACK),
         })
         .with(Player {})
-        .with(Viewshed { visible_tiles : Vec::new(), range: 8, dirty: true})
+        .with(Viewshed {
+            visible_tiles: Vec::new(),
+            range: 8,
+            dirty: true,
+        })
         .build();
 
     rltk::main_loop(context, gs)

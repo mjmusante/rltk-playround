@@ -2,15 +2,15 @@ use specs::prelude::*;
 use specs_derive::Component;
 
 pub mod map;
+pub mod monster_ai_system;
 pub mod rect;
 pub mod visibility_system;
-pub mod monster_ai_system;
 
 #[derive(Component)]
 pub struct Viewshed {
-    pub visible_tiles : Vec<rltk::Point>,
-    pub range : i32,
-    pub dirty : bool,
+    pub visible_tiles: Vec<rltk::Point>,
+    pub range: i32,
+    pub dirty: bool,
 }
 
 #[derive(Component)]

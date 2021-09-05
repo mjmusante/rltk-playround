@@ -1,15 +1,17 @@
+use super::{Monster, Position, Viewshed};
+use rltk::console;
 use specs::prelude::*;
-use super::{Viewshed, Position, Monster};
-use rltk::{console};
 
 pub struct MonsterAI {}
 
 impl<'a> System<'a> for MonsterAI {
-    type SystemData = ( ReadStorage<'a, Viewshed>,
-                          ReadStorage<'a, Position>,
-                          ReadStorage<'a, Monster> );
+    type SystemData = (
+        ReadStorage<'a, Viewshed>,
+        ReadStorage<'a, Position>,
+        ReadStorage<'a, Monster>,
+    );
 
-    fn run(&mut self, data : Self::SystemData) {
+    fn run(&mut self, data: Self::SystemData) {
         let (viewshed, pos, monster) = data;
 
         for (_viewshed, _pos, _monster) in (&viewshed, &pos, &monster).join() {
