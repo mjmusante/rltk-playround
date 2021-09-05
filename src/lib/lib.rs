@@ -4,6 +4,7 @@ use specs_derive::Component;
 pub mod map;
 pub mod rect;
 pub mod visibility_system;
+pub mod monster_ai_system;
 
 #[derive(Component)]
 pub struct Viewshed {
@@ -20,3 +21,6 @@ pub struct Position {
 
 #[derive(Component, Debug)]
 pub struct Player {}
+
+#[derive(Component, Debug)]
+pub struct Monster {}

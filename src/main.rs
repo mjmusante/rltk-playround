@@ -3,9 +3,13 @@ use specs::prelude::*;
 use specs_derive::Component;
 use std::cmp::{max, min};
 
-use blast::{Position, Viewshed, Player};
+use blast::{Position, Viewshed, Player, Monster};
 use blast::map::{Map, TileType};
+use blast::monster_ai_system::{MonsterAI};
 use blast::visibility_system::VisibilitySystem;
+
+#[derive(PartialEq, Copy, Clone)]
+pub enum RunState { Paused, Running }
 
 fn draw_map(ecs: &World, ctx: &mut Rltk) {
     let map = ecs.fetch::<Map>();
@@ -54,18 +58,19 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     }
 }
 
-fn player_input(gs: &mut State, ctx: &mut Rltk) {
+fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     // Player movement
     match ctx.key {
-        None => (),
+        None => RunState::Paused,
         Some(key) => match key {
-            VirtualKeyCode::Left => try_move_player(-1, 0, &mut gs.ecs),
-            VirtualKeyCode::Right => try_move_player(1, 0, &mut gs.ecs),
-            VirtualKeyCode::Up => try_move_player(0, -1, &mut gs.ecs),
-            VirtualKeyCode::Down => try_move_player(0, 1, &mut gs.ecs),
-            _ => (),
+            VirtualKeyCode::Left => { try_move_player(-1, 0, &mut gs.ecs); RunState::Running },
+            VirtualKeyCode::Right => { try_move_player(1, 0, &mut gs.ecs); RunState::Running },
+            VirtualKeyCode::Up => { try_move_player(0, -1, &mut gs.ecs); RunState::Running },
+            VirtualKeyCode::Down => { try_move_player(0, 1, &mut gs.ecs); RunState::Running },
+            _ => RunState::Paused,
         },
     }
+
 }
 
 #[derive(Component)]
@@ -79,24 +84,29 @@ struct Renderable {
 
 struct State {
     ecs: World,
+    pub runstate : RunState,
 }
 
 impl GameState for State {
     fn tick(&mut self, ctx: &mut Rltk) {
-        player_input(self, ctx);
-        self.run_systems();
-        ctx.cls();
+        if self.runstate == RunState::Paused {
+            self.runstate = player_input(self, ctx);
+        } else {
+            self.run_systems();
+            self.runstate = RunState::Paused;
+            ctx.cls();
 
-        draw_map(&self.ecs, ctx);
+            draw_map(&self.ecs, ctx);
 
-        let positions = self.ecs.read_storage::<Position>();
-        let renderables = self.ecs.read_storage::<Renderable>();
-        let map = self.ecs.fetch::<Map>();
+            let positions = self.ecs.read_storage::<Position>();
+            let renderables = self.ecs.read_storage::<Renderable>();
+            let map = self.ecs.fetch::<Map>();
 
-        for (pos, render) in (&positions, &renderables).join() {
-            let idx = map.xy_idx(pos.x, pos.y);
-            if map.visible_tiles[idx] {
-                ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+            for (pos, render) in (&positions, &renderables).join() {
+                let idx = map.xy_idx(pos.x, pos.y);
+                if map.visible_tiles[idx] {
+                    ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+                }
             }
         }
     }
@@ -107,6 +117,9 @@ impl State {
         let mut vis = VisibilitySystem{};
         vis.run_now(&self.ecs);
 
+        let mut mob = MonsterAI {};
+        mob.run_now(&self.ecs);
+
         self.ecs.maintain();
     }
 }
@@ -116,24 +129,36 @@ fn main() -> rltk::BError {
     let context = RltkBuilder::simple80x50()
         .with_title("Roguelike Tutorial")
         .build()?;
-    let mut gs = State { ecs: World::new() };
+    let mut gs = State { ecs: World::new(),
+        runstate : RunState::Running,
+    };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<Player>();
     gs.ecs.register::<Viewshed>();
+    gs.ecs.register::<Monster>();
     let (map, room) = Map::new_map();
     let (px, py) = room.center();
 
+    let mut rng = rltk::RandomNumberGenerator::new();
     for room in map.rooms.iter().skip(1) {
         let (x, y) = room.center();
+
+        let glyph = match rng.roll_dice(1, 2) {
+            1 => rltk::to_cp437('g'),
+            2 => rltk::to_cp437('o'),
+            _ => { panic!("invalid roll"); }
+        };
+
         gs.ecs.create_entity()
             .with(Position {x, y})
             .with(Renderable {
-                glyph: rltk::to_cp437('g'),
+                glyph: glyph,
                 fg: RGB::named(rltk::RED),
                 bg: RGB::named(rltk::BLACK),
             })
             .with(Viewshed{ visible_tiles : Vec::new(), range: 8, dirty: true })
+            .with(Monster{})
             .build();
     }
     gs.ecs.insert(map);
