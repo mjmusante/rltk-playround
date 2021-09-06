@@ -200,6 +200,9 @@ fn main() -> rltk::BError {
             range: 8,
             dirty: true,
         })
+        .with(Name {
+            name: "Player".to_string(),
+        })
         .build();
 
     gs.ecs.insert(Point::new(px, py));
