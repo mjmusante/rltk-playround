@@ -6,7 +6,7 @@ use std::cmp::{max, min};
 use blast::map::{Map, TileType};
 use blast::monster_ai_system::MonsterAI;
 use blast::visibility_system::VisibilitySystem;
-use blast::{Monster, Player, Position, Viewshed};
+use blast::{Monster, Name, Player, Position, Viewshed};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -148,17 +148,18 @@ fn main() -> rltk::BError {
     gs.ecs.register::<Player>();
     gs.ecs.register::<Viewshed>();
     gs.ecs.register::<Monster>();
+    gs.ecs.register::<Name>();
 
     let (map, room) = Map::new_map();
     let (px, py) = room.center();
 
     let mut rng = rltk::RandomNumberGenerator::new();
-    for room in map.rooms.iter().skip(1) {
+    for (i, room) in map.rooms.iter().skip(1).enumerate() {
         let (x, y) = room.center();
 
-        let glyph = match rng.roll_dice(1, 2) {
-            1 => rltk::to_cp437('g'),
-            2 => rltk::to_cp437('o'),
+        let (name, glyph) = match rng.roll_dice(1, 2) {
+            1 => ("Goblin".to_string(), rltk::to_cp437('g')),
+            2 => ("Orc".to_string(), rltk::to_cp437('o')),
             _ => {
                 panic!("invalid roll");
             }
@@ -178,6 +179,9 @@ fn main() -> rltk::BError {
                 dirty: true,
             })
             .with(Monster {})
+            .with(Name {
+                name: format!("{} #{}", &name, i),
+            })
             .build();
     }
     gs.ecs.insert(map);
