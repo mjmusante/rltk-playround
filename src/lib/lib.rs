@@ -6,3 +6,4 @@ pub mod visibility_system;
 pub mod components;
 
 pub use components::{Monster, Name, Player, Position, Viewshed};
+pub use map::Map;
