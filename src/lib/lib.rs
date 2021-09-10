@@ -6,5 +6,5 @@ pub mod visibility_system;
 
 pub mod components;
 
-pub use components::{BlocksTile, Monster, Name, Player, Position, Viewshed};
+pub use components::{BlocksTile, CombatStats, Monster, Name, Player, Position, Viewshed};
 pub use map::Map;
