@@ -16,7 +16,7 @@ pub struct Map {
     pub height: i32,
     pub revealed_tiles: Vec<bool>,
     pub visible_tiles: Vec<bool>,
-    pub blocked : Vec<bool>,
+    pub blocked: Vec<bool>,
 }
 
 impl Map {
@@ -148,6 +148,19 @@ impl BaseMap for Map {
         }
         if self.is_exit_valid(x, y + 1) {
             exits.push((idx + w, 1.0));
+        }
+
+        if self.is_exit_valid(x - 1, y - 1) {
+            exits.push(((idx - w) - 1, 1.45));
+        }
+        if self.is_exit_valid(x + 1, y - 1) {
+            exits.push(((idx - w) + 1, 1.45));
+        }
+        if self.is_exit_valid(x - 1, y + 1) {
+            exits.push(((idx + w) - 1, 1.45));
+        }
+        if self.is_exit_valid(x + 1, y + 1) {
+            exits.push(((idx + w) + 1, 1.45));
         }
 
         exits

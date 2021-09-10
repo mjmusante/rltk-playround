@@ -4,9 +4,9 @@ use specs_derive::Component;
 use std::cmp::{max, min};
 
 use blast::map::{Map, TileType};
+use blast::map_indexing_system::MapIndexingSystem;
 use blast::monster_ai_system::MonsterAI;
 use blast::visibility_system::VisibilitySystem;
-use blast::map_indexing_system::MapIndexingSystem;
 use blast::*;
 
 #[derive(PartialEq, Copy, Clone)]
@@ -63,22 +63,43 @@ fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     match ctx.key {
         None => RunState::Paused,
         Some(key) => match key {
-            VirtualKeyCode::Left => {
+            VirtualKeyCode::H | VirtualKeyCode::Numpad4 | VirtualKeyCode::Left => {
                 try_move_player(-1, 0, &mut gs.ecs);
                 RunState::Running
             }
-            VirtualKeyCode::Right => {
+            VirtualKeyCode::L | VirtualKeyCode::Numpad6 | VirtualKeyCode::Right => {
                 try_move_player(1, 0, &mut gs.ecs);
                 RunState::Running
             }
-            VirtualKeyCode::Up => {
+            VirtualKeyCode::K | VirtualKeyCode::Numpad8 | VirtualKeyCode::Up => {
                 try_move_player(0, -1, &mut gs.ecs);
                 RunState::Running
             }
-            VirtualKeyCode::Down => {
+            VirtualKeyCode::J | VirtualKeyCode::Numpad2 | VirtualKeyCode::Down => {
                 try_move_player(0, 1, &mut gs.ecs);
                 RunState::Running
             }
+
+            VirtualKeyCode::Y | VirtualKeyCode::Numpad9 => {
+                try_move_player(-1, -1, &mut gs.ecs);
+                RunState::Running
+            }
+
+            VirtualKeyCode::U | VirtualKeyCode::Numpad7 => {
+                try_move_player(1, -1, &mut gs.ecs);
+                RunState::Running
+            }
+
+            VirtualKeyCode::N | VirtualKeyCode::Numpad3 => {
+                try_move_player(1, 1, &mut gs.ecs);
+                RunState::Running
+            }
+
+            VirtualKeyCode::B | VirtualKeyCode::Numpad1 => {
+                try_move_player(-1, 1, &mut gs.ecs);
+                RunState::Running
+            }
+
             _ => RunState::Paused,
         },
     }
@@ -131,7 +152,7 @@ impl State {
         let mut mob = MonsterAI {};
         mob.run_now(&self.ecs);
 
-        let mut mapindex = MapIndexingSystem{};
+        let mut mapindex = MapIndexingSystem {};
         mapindex.run_now(&self.ecs);
 
         self.ecs.maintain();
@@ -187,7 +208,7 @@ fn main() -> rltk::BError {
             .with(Name {
                 name: format!("{} #{}", &name, i),
             })
-            .with(BlocksTile{})
+            .with(BlocksTile {})
             .build();
     }
     gs.ecs.insert(map);

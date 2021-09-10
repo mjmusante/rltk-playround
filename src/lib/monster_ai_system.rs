@@ -21,7 +21,8 @@ impl<'a> System<'a> for MonsterAI {
             (&mut viewshed, &monster, &name, &mut position).join()
         {
             if viewshed.visible_tiles.contains(&*player_pos) {
-                let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(pos.x, pos.y), *player_pos);
+                let distance =
+                    rltk::DistanceAlg::Pythagoras.distance2d(Point::new(pos.x, pos.y), *player_pos);
                 if distance < 1.5 {
                     console::log(&format!("{} shouts insults", name.name));
                     return;
