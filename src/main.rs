@@ -6,7 +6,8 @@ use std::cmp::{max, min};
 use blast::map::{Map, TileType};
 use blast::monster_ai_system::MonsterAI;
 use blast::visibility_system::VisibilitySystem;
-use blast::{Monster, Name, Player, Position, Viewshed};
+use blast::map_indexing_system::MapIndexingSystem;
+use blast::*;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -47,7 +48,7 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let map = ecs.fetch::<Map>();
     for (_player, pos, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
-        if map.tiles[destination_idx] != TileType::Wall {
+        if !map.blocked[destination_idx] {
             pos.x = min(79, max(0, pos.x + delta_x));
             pos.y = min(49, max(0, pos.y + delta_y));
             ppos.x = pos.x;
@@ -130,6 +131,9 @@ impl State {
         let mut mob = MonsterAI {};
         mob.run_now(&self.ecs);
 
+        let mut mapindex = MapIndexingSystem{};
+        mapindex.run_now(&self.ecs);
+
         self.ecs.maintain();
     }
 }
@@ -149,6 +153,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<Viewshed>();
     gs.ecs.register::<Monster>();
     gs.ecs.register::<Name>();
+    gs.ecs.register::<BlocksTile>();
 
     let (map, room) = Map::new_map();
     let (px, py) = room.center();
@@ -182,6 +187,7 @@ fn main() -> rltk::BError {
             .with(Name {
                 name: format!("{} #{}", &name, i),
             })
+            .with(BlocksTile{})
             .build();
     }
     gs.ecs.insert(map);
