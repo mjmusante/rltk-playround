@@ -1,10 +1,12 @@
-use rltk::{console, GameState, Point, Rltk, VirtualKeyCode, RGB};
+use rltk::{GameState, Point, Rltk, VirtualKeyCode, RGB};
 use specs::prelude::*;
 use specs_derive::Component;
 use std::cmp::{max, min};
 
+use blast::damage_system::DamageSystem;
 use blast::map::{Map, TileType};
 use blast::map_indexing_system::MapIndexingSystem;
+use blast::melee_combat_system::MeleeCombatSystem;
 use blast::monster_ai_system::MonsterAI;
 use blast::visibility_system::VisibilitySystem;
 use blast::*;
@@ -45,15 +47,34 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut viewsheds = ecs.write_storage::<Viewshed>();
     let mut ppos = ecs.write_resource::<Point>();
 
+    let entities = ecs.entities();
+    let mut wants_to_melee = ecs.write_storage::<WantsToMelee>();
+
     let combat_stats = ecs.read_storage::<CombatStats>();
     let map = ecs.fetch::<Map>();
 
-    for (_player, pos, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
+    for (entity, _player, pos, viewshed) in
+        (&entities, &mut players, &mut positions, &mut viewsheds).join()
+    {
+        if pos.x + delta_x < 1
+            || pos.x + delta_x > map.width - 1
+            || pos.y + delta_y < 1
+            || pos.y + delta_y > map.width - 1
+        {
+            return;
+        }
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
 
         for potential_target in map.tile_content[destination_idx].iter() {
             if combat_stats.get(*potential_target).is_some() {
-                console::log(&format!("From Hell's Heart, I stab at thee!"));
+                wants_to_melee
+                    .insert(
+                        entity,
+                        WantsToMelee {
+                            target: *potential_target,
+                        },
+                    )
+                    .expect("Add target failed");
                 return;
             }
         }
@@ -134,6 +155,7 @@ impl GameState for State {
             self.runstate = player_input(self, ctx);
         } else {
             self.run_systems();
+            damage_system::delete_the_dead(&mut self.ecs);
             self.runstate = RunState::Paused;
             ctx.cls();
 
@@ -164,6 +186,12 @@ impl State {
         let mut mapindex = MapIndexingSystem {};
         mapindex.run_now(&self.ecs);
 
+        let mut melee = MeleeCombatSystem {};
+        melee.run_now(&self.ecs);
+
+        let mut damage = DamageSystem {};
+        damage.run_now(&self.ecs);
+
         self.ecs.maintain();
     }
 }
@@ -185,6 +213,8 @@ fn main() -> rltk::BError {
     gs.ecs.register::<Name>();
     gs.ecs.register::<BlocksTile>();
     gs.ecs.register::<CombatStats>();
+    gs.ecs.register::<WantsToMelee>();
+    gs.ecs.register::<SufferDamage>();
 
     let (map, room) = Map::new_map();
     let (px, py) = room.center();
