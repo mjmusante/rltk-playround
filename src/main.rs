@@ -259,7 +259,8 @@ fn main() -> rltk::BError {
     }
     gs.ecs.insert(map);
 
-    gs.ecs
+    let player_entity = gs
+        .ecs
         .create_entity()
         .with(Position { x: px, y: py })
         .with(Renderable {
@@ -283,6 +284,7 @@ fn main() -> rltk::BError {
             power: 5,
         })
         .build();
+    gs.ecs.insert(player_entity);
 
     gs.ecs.insert(Point::new(px, py));
 
