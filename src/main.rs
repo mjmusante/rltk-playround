@@ -235,7 +235,7 @@ fn main() -> rltk::BError {
             .create_entity()
             .with(Position { x, y })
             .with(Renderable {
-                glyph: glyph,
+                glyph,
                 fg: RGB::named(rltk::RED),
                 bg: RGB::named(rltk::BLACK),
             })

@@ -4,17 +4,19 @@ use specs::prelude::*;
 
 pub struct MonsterAI {}
 
+type MonsterAIType<'a> = (
+    WriteExpect<'a, Map>,
+    ReadExpect<'a, Point>,
+    ReadExpect<'a, Entity>,
+    Entities<'a>,
+    WriteStorage<'a, Viewshed>,
+    ReadStorage<'a, Monster>,
+    WriteStorage<'a, Position>,
+    WriteStorage<'a, WantsToMelee>,
+);
+
 impl<'a> System<'a> for MonsterAI {
-    type SystemData = (
-        WriteExpect<'a, Map>,
-        ReadExpect<'a, Point>,
-        ReadExpect<'a, Entity>,
-        Entities<'a>,
-        WriteStorage<'a, Viewshed>,
-        ReadStorage<'a, Monster>,
-        WriteStorage<'a, Position>,
-        WriteStorage<'a, WantsToMelee>,
-    );
+    type SystemData = MonsterAIType<'a>;
 
     fn run(&mut self, data: Self::SystemData) {
         let (
@@ -48,7 +50,7 @@ impl<'a> System<'a> for MonsterAI {
                     let path = rltk::a_star_search(
                         map.xy_idx(pos.x, pos.y) as i32,
                         map.xy_idx(player_pos.x, player_pos.y) as i32,
-                        &mut *map,
+                        &*map,
                     );
                     if path.success && path.steps.len() > 1 {
                         let mut idx = map.xy_idx(pos.x, pos.y);
