@@ -5,6 +5,7 @@ pub mod melee_combat_system;
 pub mod monster_ai_system;
 pub mod rect;
 pub mod visibility_system;
+pub mod gui;
 
 pub mod components;
 
