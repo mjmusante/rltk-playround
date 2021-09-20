@@ -12,3 +12,11 @@ pub use components::{
     BlocksTile, CombatStats, Monster, Name, Player, Position, SufferDamage, Viewshed, WantsToMelee,
 };
 pub use map::Map;
+
+#[derive(PartialEq, Copy, Clone)]
+pub enum RunState {
+    AwaitingInput,
+    PreRun,
+    PlayerTurn,
+    MonsterTurn,
+}

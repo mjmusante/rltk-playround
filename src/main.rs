@@ -11,12 +11,6 @@ use blast::monster_ai_system::MonsterAI;
 use blast::visibility_system::VisibilitySystem;
 use blast::*;
 
-#[derive(PartialEq, Copy, Clone)]
-pub enum RunState {
-    Paused,
-    Running,
-}
-
 fn draw_map(ecs: &World, ctx: &mut Rltk) {
     let map = ecs.fetch::<Map>();
     let mut y = 0;
@@ -91,46 +85,46 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
 fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     // Player movement
     match ctx.key {
-        None => RunState::Paused,
+        None => RunState::AwaitingInput,
         Some(key) => match key {
             VirtualKeyCode::H | VirtualKeyCode::Numpad4 | VirtualKeyCode::Left => {
                 try_move_player(-1, 0, &mut gs.ecs);
-                RunState::Running
+                RunState::PlayerTurn
             }
             VirtualKeyCode::L | VirtualKeyCode::Numpad6 | VirtualKeyCode::Right => {
                 try_move_player(1, 0, &mut gs.ecs);
-                RunState::Running
+                RunState::PlayerTurn
             }
             VirtualKeyCode::K | VirtualKeyCode::Numpad8 | VirtualKeyCode::Up => {
                 try_move_player(0, -1, &mut gs.ecs);
-                RunState::Running
+                RunState::PlayerTurn
             }
             VirtualKeyCode::J | VirtualKeyCode::Numpad2 | VirtualKeyCode::Down => {
                 try_move_player(0, 1, &mut gs.ecs);
-                RunState::Running
+                RunState::PlayerTurn
             }
 
             VirtualKeyCode::Y | VirtualKeyCode::Numpad9 => {
                 try_move_player(-1, -1, &mut gs.ecs);
-                RunState::Running
+                RunState::PlayerTurn
             }
 
             VirtualKeyCode::U | VirtualKeyCode::Numpad7 => {
                 try_move_player(1, -1, &mut gs.ecs);
-                RunState::Running
+                RunState::PlayerTurn
             }
 
             VirtualKeyCode::N | VirtualKeyCode::Numpad3 => {
                 try_move_player(1, 1, &mut gs.ecs);
-                RunState::Running
+                RunState::PlayerTurn
             }
 
             VirtualKeyCode::B | VirtualKeyCode::Numpad1 => {
                 try_move_player(-1, 1, &mut gs.ecs);
-                RunState::Running
+                RunState::PlayerTurn
             }
 
-            _ => RunState::Paused,
+            _ => RunState::PlayerTurn,
         },
     }
 }
@@ -146,30 +140,46 @@ struct Renderable {
 
 struct State {
     ecs: World,
-    pub runstate: RunState,
 }
 
 impl GameState for State {
     fn tick(&mut self, ctx: &mut Rltk) {
-        if self.runstate == RunState::Paused {
-            self.runstate = player_input(self, ctx);
-        } else {
-            self.run_systems();
-            damage_system::delete_the_dead(&mut self.ecs);
-            self.runstate = RunState::Paused;
-            ctx.cls();
+        ctx.cls();
 
-            draw_map(&self.ecs, ctx);
+        let oldrunstate = *self.ecs.fetch::<RunState>();
+        let newrunstate = match oldrunstate {
+            RunState::PreRun => {
+                self.run_systems();
+                RunState::AwaitingInput
+            }
+            RunState::AwaitingInput => player_input(self, ctx),
+            RunState::PlayerTurn => {
+                self.run_systems();
+                RunState::MonsterTurn
+            }
+            RunState::MonsterTurn => {
+                self.run_systems();
+                RunState::AwaitingInput
+            }
+        };
 
-            let positions = self.ecs.read_storage::<Position>();
-            let renderables = self.ecs.read_storage::<Renderable>();
-            let map = self.ecs.fetch::<Map>();
+        {
+            let mut runwriter = self.ecs.write_resource::<RunState>();
+            *runwriter = newrunstate;
+        }
 
-            for (pos, render) in (&positions, &renderables).join() {
-                let idx = map.xy_idx(pos.x, pos.y);
-                if map.visible_tiles[idx] {
-                    ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
-                }
+        damage_system::delete_the_dead(&mut self.ecs);
+
+        draw_map(&self.ecs, ctx);
+
+        let positions = self.ecs.read_storage::<Position>();
+        let renderables = self.ecs.read_storage::<Renderable>();
+        let map = self.ecs.fetch::<Map>();
+
+        for (pos, render) in (&positions, &renderables).join() {
+            let idx = map.xy_idx(pos.x, pos.y);
+            if map.visible_tiles[idx] {
+                ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
             }
         }
     }
@@ -201,10 +211,7 @@ fn main() -> rltk::BError {
     let context = RltkBuilder::simple80x50()
         .with_title("Roguelike Tutorial")
         .build()?;
-    let mut gs = State {
-        ecs: World::new(),
-        runstate: RunState::Running,
-    };
+    let mut gs = State { ecs: World::new() };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<Player>();
@@ -215,6 +222,8 @@ fn main() -> rltk::BError {
     gs.ecs.register::<CombatStats>();
     gs.ecs.register::<WantsToMelee>();
     gs.ecs.register::<SufferDamage>();
+
+    gs.ecs.insert(RunState::PreRun);
 
     let (map, room) = Map::new_map();
     let (px, py) = room.center();
