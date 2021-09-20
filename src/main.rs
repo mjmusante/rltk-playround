@@ -226,6 +226,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<SufferDamage>();
 
     gs.ecs.insert(RunState::PreRun);
+    gs.ecs.insert(gamelog::GameLog{entries:vec!["Welcome to Rusty Roguelike".to_string()]});
 
     let (map, room) = Map::new_map();
     let (px, py) = room.center();

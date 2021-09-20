@@ -6,6 +6,7 @@ pub mod monster_ai_system;
 pub mod rect;
 pub mod visibility_system;
 pub mod gui;
+pub mod gamelog;
 
 pub mod components;
 
@@ -13,6 +14,7 @@ pub use components::{
     BlocksTile, CombatStats, Monster, Name, Player, Position, SufferDamage, Viewshed, WantsToMelee,
 };
 pub use map::Map;
+pub use gamelog::GameLog;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
