@@ -1,6 +1,12 @@
-use crate::{BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, Viewshed};
+use crate::map::MAPWIDTH;
+use crate::{
+    rect::Rect, BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, Viewshed,
+};
 use rltk::{RandomNumberGenerator, RGB};
 use specs::prelude::*;
+
+const MAX_MONSTERS: i32 = 4;
+// const MAX_ITEMS : i32 = 2;
 
 pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
     ecs.create_entity()
@@ -39,6 +45,33 @@ pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
     match roll {
         1 => orc(ecs, x, y),
         _ => goblin(ecs, x, y),
+    }
+}
+
+pub fn spawn_room(ecs: &mut World, room: &Rect) {
+    let mut monster_spawn_points: Vec<usize> = Vec::new();
+    {
+        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
+        let num_monsters = rng.roll_dice(1, MAX_MONSTERS + 2) - 3;
+
+        for _ in 0..num_monsters {
+            let mut added = false;
+            while !added {
+                let x = (room.lft + rng.roll_dice(1, room.rht - room.lft)) as usize;
+                let y = (room.top + rng.roll_dice(1, room.bot - room.top)) as usize;
+                let idx = (y * MAPWIDTH) + x;
+                if !monster_spawn_points.contains(&idx) {
+                    monster_spawn_points.push(idx);
+                    added = true;
+                }
+            }
+        }
+    }
+
+    for idx in monster_spawn_points.iter() {
+        let x = *idx % MAPWIDTH;
+        let y = *idx / MAPWIDTH;
+        random_monster(ecs, x as i32, y as i32);
     }
 }
 

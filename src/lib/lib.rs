@@ -1,3 +1,4 @@
+pub mod components;
 pub mod damage_system;
 pub mod gamelog;
 pub mod gui;
@@ -9,16 +10,10 @@ pub mod rect;
 pub mod spawner;
 pub mod visibility_system;
 
-pub mod components;
-
-pub use components::{
-    BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, SufferDamage, Viewshed,
-    WantsToMelee,
-};
-pub use gamelog::GameLog;
-pub use map::Map;
-
-pub use spawner::{player, random_monster};
+pub use components::*;
+pub use gamelog::*;
+pub use map::{Map, MAPHEIGHT, MAPWIDTH};
+pub use spawner::*;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
