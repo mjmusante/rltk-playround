@@ -4,6 +4,7 @@ use specs_derive::Component;
 use std::cmp::{max, min};
 
 use blast::damage_system::DamageSystem;
+use blast::inventory_system::ItemCollectionSystem;
 use blast::map::{Map, TileType};
 use blast::map_indexing_system::MapIndexingSystem;
 use blast::melee_combat_system::MeleeCombatSystem;
@@ -124,8 +125,47 @@ fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
                 RunState::PlayerTurn
             }
 
+            VirtualKeyCode::G => {
+                get_item(&mut gs.ecs);
+                RunState::PlayerTurn
+            }
+
             _ => RunState::PlayerTurn,
         },
+    }
+}
+
+fn get_item(ecs: &mut World) {
+    let player_pos = ecs.fetch::<Point>();
+    let player_entity = ecs.fetch::<Entity>();
+    let entities = ecs.entities();
+    let items = ecs.read_storage::<Position>();
+    let positions = ecs.read_storage::<Position>();
+    let mut gamelog = ecs.fetch_mut::<GameLog>();
+
+    let mut target_item: Option<Entity> = None;
+    for (item_entity, _item, position) in (&entities, &items, &positions).join() {
+        if position.x == player_pos.x && position.y == player_pos.y && item_entity != *player_entity {
+            target_item = Some(item_entity);
+        }
+    }
+
+    match target_item {
+        None => gamelog
+            .entries
+            .push("There is nothing here to pick up.".to_string()),
+        Some(item) => {
+            let mut pickup = ecs.write_storage::<WantsToPickupItem>();
+            pickup
+                .insert(
+                    *player_entity,
+                    WantsToPickupItem {
+                        collected_by: *player_entity,
+                        item,
+                    },
+                )
+                .expect("Unalbe to insert want to pickup");
+        }
     }
 }
 
@@ -196,6 +236,9 @@ impl State {
         let mut damage = DamageSystem {};
         damage.run_now(&self.ecs);
 
+        let mut pickup = ItemCollectionSystem {};
+        pickup.run_now(&self.ecs);
+
         self.ecs.maintain();
     }
 }
@@ -218,6 +261,8 @@ fn main() -> rltk::BError {
     gs.ecs.register::<SufferDamage>();
     gs.ecs.register::<Item>();
     gs.ecs.register::<Potion>();
+    gs.ecs.register::<WantsToPickupItem>();
+    gs.ecs.register::<InBackpack>();
 
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
     gs.ecs.insert(RunState::PreRun);
