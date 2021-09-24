@@ -130,14 +130,6 @@ fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
 }
 
 #[derive(Component)]
-struct Renderable {
-    glyph: rltk::FontCharType,
-    fg: RGB,
-    bg: RGB,
-}
-
-#[derive(Component)]
-
 struct State {
     ecs: World,
 }
@@ -225,6 +217,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<WantsToMelee>();
     gs.ecs.register::<SufferDamage>();
 
+    gs.ecs.insert(rltk::RandomNumberGenerator::new());
     gs.ecs.insert(RunState::PreRun);
     gs.ecs.insert(gamelog::GameLog {
         entries: vec!["Welcome to Rusty Roguelike".to_string()],
@@ -233,71 +226,13 @@ fn main() -> rltk::BError {
     let (map, room) = Map::new_map();
     let (px, py) = room.center();
 
-    let mut rng = rltk::RandomNumberGenerator::new();
-    for (i, room) in map.rooms.iter().skip(1).enumerate() {
+    for room in map.rooms.iter().skip(1) {
         let (x, y) = room.center();
-
-        let (name, glyph) = match rng.roll_dice(1, 2) {
-            1 => ("Goblin".to_string(), rltk::to_cp437('g')),
-            2 => ("Orc".to_string(), rltk::to_cp437('o')),
-            _ => {
-                panic!("invalid roll");
-            }
-        };
-
-        gs.ecs
-            .create_entity()
-            .with(Position { x, y })
-            .with(Renderable {
-                glyph,
-                fg: RGB::named(rltk::RED),
-                bg: RGB::named(rltk::BLACK),
-            })
-            .with(Viewshed {
-                visible_tiles: Vec::new(),
-                range: 8,
-                dirty: true,
-            })
-            .with(Monster {})
-            .with(Name {
-                name: format!("{} #{}", &name, i),
-            })
-            .with(BlocksTile {})
-            .with(CombatStats {
-                max_hp: 16,
-                hp: 16,
-                defense: 1,
-                power: 4,
-            })
-            .build();
+        spawner::random_monster(&mut gs.ecs, x, y);
     }
     gs.ecs.insert(map);
 
-    let player_entity = gs
-        .ecs
-        .create_entity()
-        .with(Position { x: px, y: py })
-        .with(Renderable {
-            glyph: rltk::to_cp437('@'),
-            fg: RGB::named(rltk::YELLOW),
-            bg: RGB::named(rltk::BLACK),
-        })
-        .with(Player {})
-        .with(Viewshed {
-            visible_tiles: Vec::new(),
-            range: 8,
-            dirty: true,
-        })
-        .with(Name {
-            name: "Player".to_string(),
-        })
-        .with(CombatStats {
-            max_hp: 30,
-            hp: 30,
-            defense: 2,
-            power: 5,
-        })
-        .build();
+    let player_entity = spawner::player(&mut gs.ecs, px, py);
     gs.ecs.insert(player_entity);
 
     gs.ecs.insert(Point::new(px, py));
