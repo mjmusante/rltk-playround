@@ -68,6 +68,11 @@ pub struct WantsToMelee {
     pub target: Entity,
 }
 
+#[derive(Component)]
+pub struct State {
+    pub ecs: World,
+}
+
 #[derive(Component, Debug)]
 pub struct SufferDamage {
     pub amount: Vec<i32>,
