@@ -148,7 +148,7 @@ pub enum ItemMenuResult {
     Selected,
 }
 
-pub fn show_inventory(gs: &mut State, ctx: &mut Rltk) -> ItemMenuResult {
+pub fn show_inventory(gs: &mut State, ctx: &mut Rltk) -> (ItemMenuResult, Option<Entity>) {
     let player_entity = gs.ecs.fetch::<Entity>();
     let names = gs.ecs.read_storage::<Name>();
     let backpack = gs.ecs.read_storage::<InBackpack>();
@@ -182,9 +182,12 @@ pub fn show_inventory(gs: &mut State, ctx: &mut Rltk) -> ItemMenuResult {
         "ESCAPE to cancel",
     );
 
-    for (j, (_pack, name)) in (&backpack, &names)
+    let entities = gs.ecs.entities();
+    let mut equippable: Vec<Entity> = Vec::new();
+
+    for (j, (entity, _pack, name)) in (&entities, &backpack, &names)
         .join()
-        .filter(|item| item.0.owner == *player_entity)
+        .filter(|item| item.1.owner == *player_entity)
         .enumerate()
     {
         ctx.set(
@@ -210,12 +213,22 @@ pub fn show_inventory(gs: &mut State, ctx: &mut Rltk) -> ItemMenuResult {
         );
 
         ctx.print(21, y, &name.name.to_string());
+        equippable.push(entity);
         y += 1;
     }
 
     match ctx.key {
-        None => ItemMenuResult::NoResponse,
-        Some(VirtualKeyCode::Escape) => ItemMenuResult::Cancel,
-        _ => ItemMenuResult::NoResponse,
+        None => (ItemMenuResult::NoResponse, None),
+        Some(VirtualKeyCode::Escape) => (ItemMenuResult::Cancel, None),
+        Some(key) => {
+            let selection = rltk::letter_to_option(key);
+            if selection > -1 && selection < count as i32 {
+                return (
+                    ItemMenuResult::Selected,
+                    Some(equippable[selection as usize]),
+                );
+            }
+            (ItemMenuResult::NoResponse, None)
+        }
     }
 }

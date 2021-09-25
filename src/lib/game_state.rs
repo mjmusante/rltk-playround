@@ -5,7 +5,7 @@ use crate::map::draw_map;
 use crate::map_indexing_system::MapIndexingSystem;
 use crate::melee_combat_system::MeleeCombatSystem;
 use crate::monster_ai_system::MonsterAI;
-use crate::player::*;
+use crate::player::player_input;
 use crate::visibility_system::VisibilitySystem;
 use crate::*;
 
@@ -47,10 +47,23 @@ impl GameState for State {
                 self.run_systems();
                 RunState::AwaitingInput
             }
-            RunState::ShowInventory => match gui::show_inventory(self, ctx) {
-                gui::ItemMenuResult::Cancel => RunState::AwaitingInput,
-                _ => RunState::ShowInventory,
-            },
+            RunState::ShowInventory => {
+                let result = gui::show_inventory(self, ctx);
+                match result.0 {
+                    gui::ItemMenuResult::Cancel => RunState::AwaitingInput,
+                    gui::ItemMenuResult::NoResponse => RunState::ShowInventory,
+                    gui::ItemMenuResult::Selected => {
+                        let item_entity = result.1.unwrap();
+                        let names = self.ecs.read_storage::<Name>();
+                        let mut gamelog = self.ecs.fetch_mut::<gamelog::GameLog>();
+                        gamelog.entries.push(format!(
+                            "You try to use {} but it isn't written yet",
+                            names.get(item_entity).unwrap().name
+                        ));
+                        RunState::AwaitingInput
+                    }
+                }
+            }
         };
 
         {
