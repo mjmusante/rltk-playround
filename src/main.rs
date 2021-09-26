@@ -23,6 +23,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<Item>();
     gs.ecs.register::<Potion>();
     gs.ecs.register::<WantsToPickupItem>();
+    gs.ecs.register::<WantsToDropItem>();
     gs.ecs.register::<InBackpack>();
 
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
