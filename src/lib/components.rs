@@ -3,8 +3,16 @@ use specs::prelude::*;
 use specs_derive::Component;
 
 #[derive(Component)]
+pub struct Consumable {}
+
+#[derive(Component)]
 pub struct WantsToDropItem {
     pub item: Entity,
+}
+
+#[derive(Component)]
+pub struct WantsToDrinkPotion {
+    pub potion: Entity,
 }
 
 #[derive(Component)]
