@@ -1,6 +1,6 @@
 use crate::{
-    gamelog::GameLog, CombatStats, InBackpack, Name, Position, Potion, WantsToDropItem,
-    WantsToPickupItem, WantsToUseItem,
+    gamelog::GameLog, CombatStats, Consumable, InBackpack, Name, Position, ProvidesHealing,
+    WantsToDropItem, WantsToPickupItem, WantsToUseItem,
 };
 use specs::prelude::*;
 
@@ -53,18 +53,27 @@ type ItemData<'a> = (
     Entities<'a>,
     WriteStorage<'a, WantsToUseItem>,
     ReadStorage<'a, Name>,
-    ReadStorage<'a, Potion>,
+    ReadStorage<'a, ProvidesHealing>,
     WriteStorage<'a, CombatStats>,
+    ReadStorage<'a, Consumable>,
 );
 
 impl<'a> System<'a> for ItemUseSystem {
     type SystemData = ItemData<'a>;
 
     fn run(&mut self, data: Self::SystemData) {
-        let (player_entity, mut gamelog, entities, mut useitems, names, potions, mut combat_stats) =
-            data;
+        let (
+            player_entity,
+            mut gamelog,
+            entities,
+            mut useitems,
+            names,
+            healing,
+            mut combat_stats,
+            consumables,
+        ) = data;
         for (entity, useitem, stats) in (&entities, &useitems, &mut combat_stats).join() {
-            if let Some(potion) = potions.get(useitem.item) {
+            if let Some(potion) = healing.get(useitem.item) {
                 stats.hp = i32::min(stats.max_hp, stats.hp + potion.heal_amount);
                 if entity == *player_entity {
                     gamelog.entries.push(format!(
@@ -73,7 +82,9 @@ impl<'a> System<'a> for ItemUseSystem {
                         potion.heal_amount
                     ));
                 }
-                entities.delete(useitem.item).expect("Delete failed");
+                if consumables.get(useitem.item).is_some() {
+                    entities.delete(useitem.item).expect("Delete failed");
+                }
             }
         }
         useitems.clear();

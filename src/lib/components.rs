@@ -30,7 +30,7 @@ pub struct InBackpack {
 pub struct Item {}
 
 #[derive(Component)]
-pub struct Potion {
+pub struct ProvidesHealing {
     pub heal_amount: i32,
 }
 
