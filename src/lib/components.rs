@@ -11,8 +11,8 @@ pub struct WantsToDropItem {
 }
 
 #[derive(Component)]
-pub struct WantsToDrinkPotion {
-    pub potion: Entity,
+pub struct WantsToUseItem {
+    pub item: Entity,
 }
 
 #[derive(Component)]

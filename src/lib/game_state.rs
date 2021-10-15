@@ -1,6 +1,6 @@
 use crate::components::State;
 use crate::damage_system::*;
-use crate::inventory_system::{ItemCollectionSystem, ItemDropSystem, PotionUseSystem};
+use crate::inventory_system::{ItemCollectionSystem, ItemDropSystem, ItemUseSystem};
 use crate::map::draw_map;
 use crate::map_indexing_system::MapIndexingSystem;
 use crate::melee_combat_system::MeleeCombatSystem;
@@ -56,13 +56,11 @@ impl GameState for State {
                     gui::ItemMenuResult::NoResponse => RunState::ShowInventory,
                     gui::ItemMenuResult::Selected => {
                         let item_entity = result.1.unwrap();
-                        let mut intent = self.ecs.write_storage::<WantsToDrinkPotion>();
+                        let mut intent = self.ecs.write_storage::<WantsToUseItem>();
                         intent
                             .insert(
                                 *self.ecs.fetch::<Entity>(),
-                                WantsToDrinkPotion {
-                                    potion: item_entity,
-                                },
+                                WantsToUseItem { item: item_entity },
                             )
                             .expect("Unable to insert intent");
                         RunState::PlayerTurn
@@ -121,8 +119,8 @@ impl State {
         let mut drop_items = ItemDropSystem {};
         drop_items.run_now(&self.ecs);
 
-        let mut potions = PotionUseSystem {};
-        potions.run_now(&self.ecs);
+        let mut useitems = ItemUseSystem {};
+        useitems.run_now(&self.ecs);
 
         self.ecs.maintain();
     }

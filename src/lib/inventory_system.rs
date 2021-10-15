@@ -1,6 +1,6 @@
 use crate::{
-    gamelog::GameLog, CombatStats, InBackpack, Name, Position, Potion, WantsToDrinkPotion,
-    WantsToDropItem, WantsToPickupItem,
+    gamelog::GameLog, CombatStats, InBackpack, Name, Position, Potion, WantsToDropItem,
+    WantsToPickupItem, WantsToUseItem,
 };
 use specs::prelude::*;
 
@@ -45,45 +45,38 @@ impl<'a> System<'a> for ItemCollectionSystem {
     }
 }
 
-pub struct PotionUseSystem {}
+pub struct ItemUseSystem {}
 
-type PotionData<'a> = (
+type ItemData<'a> = (
     ReadExpect<'a, Entity>,
     WriteExpect<'a, GameLog>,
     Entities<'a>,
-    WriteStorage<'a, WantsToDrinkPotion>,
+    WriteStorage<'a, WantsToUseItem>,
     ReadStorage<'a, Name>,
     ReadStorage<'a, Potion>,
     WriteStorage<'a, CombatStats>,
 );
 
-impl<'a> System<'a> for PotionUseSystem {
-    type SystemData = PotionData<'a>;
+impl<'a> System<'a> for ItemUseSystem {
+    type SystemData = ItemData<'a>;
 
     fn run(&mut self, data: Self::SystemData) {
-        let (
-            player_entity,
-            mut gamelog,
-            entities,
-            mut wants_drink,
-            names,
-            potions,
-            mut combat_stats,
-        ) = data;
-        for (entity, drink, stats) in (&entities, &wants_drink, &mut combat_stats).join() {
-            if let Some(potion) = potions.get(drink.potion) {
+        let (player_entity, mut gamelog, entities, mut useitems, names, potions, mut combat_stats) =
+            data;
+        for (entity, useitem, stats) in (&entities, &useitems, &mut combat_stats).join() {
+            if let Some(potion) = potions.get(useitem.item) {
                 stats.hp = i32::min(stats.max_hp, stats.hp + potion.heal_amount);
                 if entity == *player_entity {
                     gamelog.entries.push(format!(
                         "You drink the {}, healing {} hp",
-                        names.get(drink.potion).unwrap().name,
+                        names.get(useitem.item).unwrap().name,
                         potion.heal_amount
                     ));
                 }
-                entities.delete(drink.potion).expect("Delete failed");
+                entities.delete(useitem.item).expect("Delete failed");
             }
         }
-        wants_drink.clear();
+        useitems.clear();
     }
 }
 
