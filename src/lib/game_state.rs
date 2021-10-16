@@ -12,10 +12,8 @@ use crate::*;
 use rltk::{GameState, Rltk};
 use specs::prelude::*;
 
-impl GameState for State {
-    fn tick(&mut self, ctx: &mut Rltk) {
-        ctx.cls();
-
+impl State {
+    fn game_screen(&mut self, ctx: &mut Rltk) {
         draw_map(&self.ecs, ctx);
         {
             let positions = self.ecs.read_storage::<Position>();
@@ -33,9 +31,34 @@ impl GameState for State {
 
             gui::draw_ui(&self.ecs, ctx);
         }
+    }
+}
 
+impl GameState for State {
+    fn tick(&mut self, ctx: &mut Rltk) {
+        ctx.cls();
         let oldrunstate = *self.ecs.fetch::<RunState>();
+
+        match oldrunstate {
+            RunState::MainMenu { .. } => (),
+            _ => {
+                self.game_screen(ctx);
+            }
+        };
+
         let newrunstate = match oldrunstate {
+            RunState::MainMenu { .. } => match gui::main_menu(self, ctx) {
+                gui::MainMenuResult::NoSelection { selected } => RunState::MainMenu {
+                    menu_selection: selected,
+                },
+                gui::MainMenuResult::Selected { selected } => match selected {
+                    gui::MainMenuSelection::NewGame => RunState::PreRun,
+                    gui::MainMenuSelection::LoadGame => RunState::PreRun,
+                    gui::MainMenuSelection::Quit => {
+                        ::std::process::exit(0);
+                    }
+                },
+            },
             RunState::PreRun => {
                 self.run_systems();
                 RunState::AwaitingInput
