@@ -1,6 +1,6 @@
 use crate::{
-    gamelog::GameLog, CombatStats, Consumable, InBackpack, InflictsDamage, Map, Name, Position,
-    ProvidesHealing, SufferDamage, WantsToDropItem, WantsToPickupItem, WantsToUseItem,
+    gamelog::GameLog, AreaOfEffect, CombatStats, Consumable, InBackpack, InflictsDamage, Map, Name,
+    Position, ProvidesHealing, SufferDamage, WantsToDropItem, WantsToPickupItem, WantsToUseItem,
 };
 use specs::prelude::*;
 
@@ -59,6 +59,7 @@ type ItemData<'a> = (
     ReadStorage<'a, Consumable>,
     ReadStorage<'a, InflictsDamage>,
     WriteStorage<'a, SufferDamage>,
+    ReadStorage<'a, AreaOfEffect>,
 );
 
 impl<'a> System<'a> for ItemUseSystem {
@@ -77,27 +78,50 @@ impl<'a> System<'a> for ItemUseSystem {
             consumables,
             inflicts_damage,
             mut suffer_damage,
+            aoe,
         ) = data;
 
         let mut used_item = false;
 
-        for (entity, useitem, stats) in (&entities, &useitems, &mut combat_stats).join() {
-            if let Some(potion) = healing.get(useitem.item) {
-                stats.hp = i32::min(stats.max_hp, stats.hp + potion.heal_amount);
-                if entity == *player_entity {
-                    used_item = true;
-                    gamelog.entries.push(format!(
-                        "You drink the {}, healing {} hp",
-                        names.get(useitem.item).unwrap().name,
-                        potion.heal_amount
-                    ));
+        for (entity, useitem) in (&entities, &useitems).join() {
+            let mut targets: Vec<Entity> = Vec::new();
+
+            if let Some(target) = useitem.target {
+                if let Some(area_effect) = aoe.get(useitem.item) {
+                    let blast_tiles = rltk::field_of_view(target, area_effect.radius, &*map);
+                    for tile_idx in blast_tiles.iter() {
+                        let idx = map.xy_idx(tile_idx.x, tile_idx.y);
+                        for mob in map.tile_content[idx].iter() {
+                            targets.push(*mob);
+                        }
+                    }
+                } else {
+                    let idx = map.xy_idx(target.x, target.y);
+                    for mob in map.tile_content[idx].iter() {
+                        targets.push(*mob);
+                    }
+                }
+            } else {
+                targets.push(*player_entity);
+            }
+
+            if let Some(healer) = healing.get(useitem.item) {
+                for target in targets.iter() {
+                    if let Some(stats) = combat_stats.get_mut(*target) {
+                        stats.hp = i32::min(stats.max_hp, stats.hp + healer.heal_amount);
+                        if entity == *player_entity {
+                            gamelog.entries.push(format!(
+                                "You drink the {}, healing {} hp",
+                                names.get(useitem.item).unwrap().name,
+                                healer.heal_amount
+                            ));
+                        }
+                    }
                 }
             }
 
             if let Some(damage) = inflicts_damage.get(useitem.item) {
-                let target_point = useitem.target.unwrap();
-                let idx = map.xy_idx(target_point.x, target_point.y);
-                for mob in map.tile_content[idx].iter() {
+                for mob in targets.iter() {
                     SufferDamage::new_damage(&mut suffer_damage, *mob, damage.damage);
                     if entity == *player_entity {
                         let mob_name = names.get(*mob).unwrap();
