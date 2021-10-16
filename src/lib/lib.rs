@@ -18,6 +18,8 @@ pub use gamelog::*;
 pub use map::{Map, MAPHEIGHT, MAPWIDTH};
 pub use spawner::*;
 
+use specs::prelude::*;
+
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
     AwaitingInput,
@@ -26,4 +28,5 @@ pub enum RunState {
     MonsterTurn,
     ShowInventory,
     ShowDropItem,
+    ShowTargeting { range: i32, item: Entity },
 }

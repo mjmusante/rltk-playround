@@ -27,6 +27,8 @@ fn main() -> rltk::BError {
     gs.ecs.register::<InBackpack>();
     gs.ecs.register::<WantsToUseItem>();
     gs.ecs.register::<Consumable>();
+    gs.ecs.register::<Ranged>();
+    gs.ecs.register::<InflictsDamage>();
 
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
     gs.ecs.insert(RunState::PreRun);
@@ -40,6 +42,8 @@ fn main() -> rltk::BError {
     for room in map.rooms.iter().skip(1) {
         spawner::spawn_room(&mut gs.ecs, room);
     }
+    spawner::spawn_goodies(&mut gs.ecs, map.rooms.get(0).unwrap());
+
     gs.ecs.insert(map);
 
     let player_entity = spawner::player(&mut gs.ecs, px, py);

@@ -3,6 +3,16 @@ use specs::prelude::*;
 use specs_derive::Component;
 
 #[derive(Component)]
+pub struct Ranged {
+    pub range: i32,
+}
+
+#[derive(Component)]
+pub struct InflictsDamage {
+    pub damage: i32,
+}
+
+#[derive(Component)]
 pub struct Consumable {}
 
 #[derive(Component)]
@@ -13,6 +23,7 @@ pub struct WantsToDropItem {
 #[derive(Component)]
 pub struct WantsToUseItem {
     pub item: Entity,
+    pub target: Option<rltk::Point>,
 }
 
 #[derive(Component)]

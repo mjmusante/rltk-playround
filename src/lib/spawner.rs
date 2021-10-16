@@ -39,6 +39,29 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
         .build()
 }
 
+pub fn spawn_goodies(ecs: &mut World, room: &Rect) {
+    let mut goodies: Vec<usize> = Vec::new();
+    {
+        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
+        for _ in 0..5 {
+            loop {
+                let x = (room.lft + rng.roll_dice(1, room.rht - room.lft)) as usize;
+                let y = (room.top + rng.roll_dice(1, room.bot - room.top)) as usize;
+                let idx = (y * MAPWIDTH) + x;
+                if !goodies.contains(&idx) {
+                    goodies.push(idx);
+                    break;
+                }
+            }
+        }
+    }
+    for idx in goodies.iter() {
+        let x = *idx % MAPWIDTH;
+        let y = *idx / MAPWIDTH;
+        random_item(ecs, x as i32, y as i32);
+    }
+}
+
 pub fn spawn_room(ecs: &mut World, room: &Rect) {
     let mut monster_spawn_points: Vec<usize> = Vec::new();
     let mut item_spawn_points: Vec<usize> = Vec::new();
@@ -83,11 +106,22 @@ pub fn spawn_room(ecs: &mut World, room: &Rect) {
     for idx in item_spawn_points.iter() {
         let x = *idx % MAPWIDTH;
         let y = *idx / MAPWIDTH;
-        health_potion(ecs, x as i32, y as i32);
+        random_item(ecs, x as i32, y as i32);
     }
 }
 
-pub fn health_potion(ecs: &mut World, x: i32, y: i32) {
+fn random_item(ecs: &mut World, x: i32, y: i32) {
+    let roll = {
+        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
+        rng.roll_dice(1, 2)
+    };
+    match roll {
+        1 => health_potion(ecs, x, y),
+        _ => magic_missile_scroll(ecs, x, y),
+    };
+}
+
+fn health_potion(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
         .with(Position { x, y })
         .with(Renderable {
@@ -102,6 +136,25 @@ pub fn health_potion(ecs: &mut World, x: i32, y: i32) {
         .with(Item {})
         .with(Consumable {})
         .with(ProvidesHealing { heal_amount: 8 })
+        .build();
+}
+
+fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position { x, y })
+        .with(Renderable {
+            glyph: rltk::to_cp437(')'),
+            fg: RGB::named(rltk::CYAN),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name {
+            name: "Magic Missile Scrolle".to_string(),
+        })
+        .with(Item {})
+        .with(Consumable {})
+        .with(Ranged { range: 6 })
+        .with(InflictsDamage { damage: 8 })
         .build();
 }
 
