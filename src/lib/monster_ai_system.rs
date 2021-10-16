@@ -1,4 +1,4 @@
-use crate::{Map, Monster, Position, RunState, Viewshed, WantsToMelee};
+use crate::{Confusion, Map, Monster, Position, RunState, Viewshed, WantsToMelee};
 use rltk::Point;
 use specs::prelude::*;
 
@@ -14,6 +14,7 @@ type MonsterAIType<'a> = (
     ReadStorage<'a, Monster>,
     WriteStorage<'a, Position>,
     WriteStorage<'a, WantsToMelee>,
+    WriteStorage<'a, Confusion>,
 );
 
 impl<'a> System<'a> for MonsterAI {
@@ -30,6 +31,7 @@ impl<'a> System<'a> for MonsterAI {
             monster,
             mut position,
             mut wants_to_melee,
+            mut confused,
         ) = data;
 
         if *run_state != RunState::MonsterTurn {
@@ -39,11 +41,19 @@ impl<'a> System<'a> for MonsterAI {
         for (entity, mut viewshed, _monster, mut pos) in
             (&entities, &mut viewshed, &monster, &mut position).join()
         {
+            if let Some(confuzzled) = confused.get_mut(entity) {
+                if confuzzled.turns < 2 {
+                    confused.remove(entity);
+                } else {
+                    confuzzled.turns -= 1;
+                }
+                continue;
+            }
+
             if viewshed.visible_tiles.contains(&*player_pos) {
                 let distance =
                     rltk::DistanceAlg::Pythagoras.distance2d(Point::new(pos.x, pos.y), *player_pos);
                 if distance < 1.5 {
-                    // console::log(&format!("{} shouts insults", name.name));
                     wants_to_melee
                         .insert(
                             entity,

@@ -1,6 +1,7 @@
 use crate::{
-    gamelog::GameLog, AreaOfEffect, CombatStats, Consumable, InBackpack, InflictsDamage, Map, Name,
-    Position, ProvidesHealing, SufferDamage, WantsToDropItem, WantsToPickupItem, WantsToUseItem,
+    gamelog::GameLog, AreaOfEffect, CombatStats, Confusion, Consumable, InBackpack, InflictsDamage,
+    Map, Name, Position, ProvidesHealing, SufferDamage, WantsToDropItem, WantsToPickupItem,
+    WantsToUseItem,
 };
 use specs::prelude::*;
 
@@ -60,6 +61,7 @@ type ItemData<'a> = (
     ReadStorage<'a, InflictsDamage>,
     WriteStorage<'a, SufferDamage>,
     ReadStorage<'a, AreaOfEffect>,
+    WriteStorage<'a, Confusion>,
 );
 
 impl<'a> System<'a> for ItemUseSystem {
@@ -79,6 +81,7 @@ impl<'a> System<'a> for ItemUseSystem {
             inflicts_damage,
             mut suffer_damage,
             aoe,
+            mut confused,
         ) = data;
 
         let mut used_item = false;
@@ -103,6 +106,28 @@ impl<'a> System<'a> for ItemUseSystem {
                 }
             } else {
                 targets.push(*player_entity);
+            }
+
+            let mut add_confusion = Vec::new();
+            {
+                if let Some(confusion) = confused.get(useitem.item) {
+                    for mob in targets.iter() {
+                        add_confusion.push((*mob, confusion.turns));
+                        if entity == *player_entity {
+                            let mob_name = names.get(*mob).unwrap();
+                            let item_name = names.get(useitem.item).unwrap();
+                            gamelog.entries.push(format!(
+                                "You use {} on {}, confusing them.",
+                                item_name.name, mob_name.name
+                            ));
+                        }
+                    }
+                }
+            }
+            for mob in add_confusion.iter() {
+                confused
+                    .insert(mob.0, Confusion { turns: mob.1 })
+                    .expect("Unable to insert status");
             }
 
             if let Some(healer) = healing.get(useitem.item) {

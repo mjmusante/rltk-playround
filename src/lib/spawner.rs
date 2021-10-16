@@ -113,11 +113,12 @@ pub fn spawn_room(ecs: &mut World, room: &Rect) {
 fn random_item(ecs: &mut World, x: i32, y: i32) {
     let roll = {
         let mut rng = ecs.write_resource::<RandomNumberGenerator>();
-        rng.roll_dice(1, 3)
+        rng.roll_dice(1, 4)
     };
     match roll {
         1 => health_potion(ecs, x, y),
         2 => fireball_scroll(ecs, x, y),
+        3 => confusion_scroll(ecs, x, y),
         _ => magic_missile_scroll(ecs, x, y),
     };
 }
@@ -176,6 +177,25 @@ fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
         .with(Ranged { range: 6 })
         .with(InflictsDamage { damage: 20 })
         .with(AreaOfEffect { radius: 3 })
+        .build();
+}
+
+fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position { x, y })
+        .with(Renderable {
+            glyph: rltk::to_cp437(')'),
+            fg: RGB::named(rltk::PINK),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name {
+            name: "Confusion Scroll".to_string(),
+        })
+        .with(Item {})
+        .with(Consumable {})
+        .with(Ranged { range: 6 })
+        .with(Confusion { turns: 3 })
         .build();
 }
 
