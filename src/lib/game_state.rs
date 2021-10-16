@@ -59,6 +59,9 @@ impl GameState for State {
                     }
                 },
             },
+            RunState::SaveGame => RunState::MainMenu {
+                menu_selection: gui::MainMenuSelection::LoadGame,
+            },
             RunState::PreRun => {
                 self.run_systems();
                 RunState::AwaitingInput
