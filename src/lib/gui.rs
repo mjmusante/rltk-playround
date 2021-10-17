@@ -1,5 +1,6 @@
 use crate::{
-    CombatStats, GameLog, InBackpack, Map, Name, Player, Position, RunState, State, Viewshed,
+    saveload_system, CombatStats, GameLog, InBackpack, Map, Name, Player, Position, RunState,
+    State, Viewshed,
 };
 use rltk::{Point, Rltk, VirtualKeyCode, RGB};
 use specs::prelude::*;
@@ -390,6 +391,7 @@ pub enum MainMenuResult {
 }
 
 pub fn main_menu(gs: &mut State, ctx: &mut Rltk) -> MainMenuResult {
+    let save_exists = saveload_system::does_save_exist();
     let runstate = gs.ecs.fetch::<RunState>();
 
     ctx.print_color_centered(
@@ -418,21 +420,25 @@ pub fn main_menu(gs: &mut State, ctx: &mut Rltk) -> MainMenuResult {
                 "Begin New Game",
             );
         }
-        if selection == MainMenuSelection::LoadGame {
-            ctx.print_color_centered(
-                25,
-                RGB::named(rltk::MAGENTA),
-                RGB::named(rltk::BLACK),
-                "Load Game",
-            );
-        } else {
-            ctx.print_color_centered(
-                25,
-                RGB::named(rltk::WHITE),
-                RGB::named(rltk::BLACK),
-                "Load Game",
-            );
+
+        if save_exists {
+            if selection == MainMenuSelection::LoadGame {
+                ctx.print_color_centered(
+                    25,
+                    RGB::named(rltk::MAGENTA),
+                    RGB::named(rltk::BLACK),
+                    "Load Game",
+                );
+            } else {
+                ctx.print_color_centered(
+                    25,
+                    RGB::named(rltk::WHITE),
+                    RGB::named(rltk::BLACK),
+                    "Load Game",
+                );
+            }
         }
+
         if selection == MainMenuSelection::Quit {
             ctx.print_color_centered(
                 26,
