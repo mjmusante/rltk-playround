@@ -1,3 +1,4 @@
+extern crate serde;
 use rltk::Point;
 use specs::prelude::*;
 
@@ -31,7 +32,10 @@ fn main() -> rltk::BError {
     gs.ecs.register::<InflictsDamage>();
     gs.ecs.register::<AreaOfEffect>();
     gs.ecs.register::<Confusion>();
+    gs.ecs.register::<SimpleMarker<SerializeMe>>();
+    gs.ecs.register::<SerializationHelper>();
 
+    gs.ecs.insert(SimpleMarkerAllocator::<SerializeMe>::new());
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
     gs.ecs.insert(RunState::MainMenu {
         menu_selection: gui::MainMenuSelection::NewGame,

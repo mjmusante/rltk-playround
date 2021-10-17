@@ -10,6 +10,7 @@ pub mod melee_combat_system;
 pub mod monster_ai_system;
 pub mod player;
 pub mod rect;
+pub mod saveload_system;
 pub mod spawner;
 pub mod visibility_system;
 
@@ -19,6 +20,7 @@ pub use map::{Map, MAPHEIGHT, MAPWIDTH};
 pub use spawner::*;
 
 use specs::prelude::*;
+pub use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {

@@ -6,11 +6,14 @@ use crate::map_indexing_system::MapIndexingSystem;
 use crate::melee_combat_system::MeleeCombatSystem;
 use crate::monster_ai_system::MonsterAI;
 use crate::player::player_input;
+use crate::saveload_system;
 use crate::visibility_system::VisibilitySystem;
 use crate::*;
 
 use rltk::{GameState, Rltk};
 use specs::prelude::*;
+
+extern crate serde;
 
 impl State {
     fn game_screen(&mut self, ctx: &mut Rltk) {
@@ -59,9 +62,13 @@ impl GameState for State {
                     }
                 },
             },
-            RunState::SaveGame => RunState::MainMenu {
-                menu_selection: gui::MainMenuSelection::LoadGame,
-            },
+            RunState::SaveGame => {
+                saveload_system::save_game(&mut self.ecs);
+
+                RunState::MainMenu {
+                    menu_selection: gui::MainMenuSelection::LoadGame,
+                }
+            }
             RunState::PreRun => {
                 self.run_systems();
                 RunState::AwaitingInput
