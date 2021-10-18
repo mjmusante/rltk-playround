@@ -44,7 +44,7 @@ fn main() -> rltk::BError {
         entries: vec!["Welcome to Rusty Roguelike".to_string()],
     });
 
-    let (map, room) = Map::new_map();
+    let (map, room) = Map::new_map(1);
     let (px, py) = room.center();
 
     for room in map.rooms.iter().skip(1) {
