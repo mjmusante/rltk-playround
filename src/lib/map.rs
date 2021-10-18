@@ -4,11 +4,13 @@ use specs::prelude::{Entity, World};
 use std::cmp::{max, min};
 
 use super::rect::Rect;
+use super::GameLog;
 
 #[derive(PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum TileType {
     Wall,
     Floor,
+    DownStairs,
 }
 
 pub const MAPWIDTH: usize = 80;
@@ -136,6 +138,11 @@ impl Map {
                 map.rooms.push(new_room);
             }
         }
+
+        let stairs_position = map.rooms[map.rooms.len() - 1].center();
+        let stairs_idx = map.xy_idx(stairs_position.0, stairs_position.1);
+        map.tiles[stairs_idx] = TileType::DownStairs;
+
         (map, first_room)
     }
 }
@@ -203,6 +210,7 @@ pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
             let (glyph, mut fg) = match tile {
                 TileType::Floor => (rltk::to_cp437('.'), RGB::from_f32(0.5, 0.5, 0.5)),
                 TileType::Wall => (rltk::to_cp437('#'), RGB::from_f32(0.0, 1.0, 0.0)),
+                TileType::DownStairs => (rltk::to_cp437('>'), RGB::from_f32(0.0, 1.0, 1.0)),
             };
             if !map.visible_tiles[idx] {
                 fg = fg.to_greyscale();
@@ -215,5 +223,20 @@ pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
             x = 0;
             y += 1;
         }
+    }
+}
+
+pub fn try_next_level(ecs: &mut World) -> bool {
+    let player_pos = ecs.fetch::<Point>();
+    let map = ecs.fetch::<Map>();
+    let player_idx = map.xy_idx(player_pos.x, player_pos.y);
+    if map.tiles[player_idx] == TileType::DownStairs {
+        true
+    } else {
+        let mut gamelog = ecs.fetch_mut::<GameLog>();
+        gamelog
+            .entries
+            .push("There is no way down from here.".to_string());
+        false
     }
 }

@@ -50,6 +50,13 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
                 RunState::PlayerTurn
             }
 
+            VirtualKeyCode::Period => {
+                if try_next_level(&mut gs.ecs) {
+                    return RunState::NextLevel;
+                }
+                RunState::PlayerTurn
+            }
+
             VirtualKeyCode::I => RunState::ShowInventory,
             VirtualKeyCode::D => RunState::ShowDropItem,
             VirtualKeyCode::Escape => RunState::SaveGame,

@@ -17,7 +17,7 @@ pub mod visibility_system;
 
 pub use components::*;
 pub use gamelog::*;
-pub use map::{Map, MAPHEIGHT, MAPWIDTH};
+pub use map::{try_next_level, Map, MAPHEIGHT, MAPWIDTH};
 pub use spawner::*;
 
 use specs::prelude::*;
@@ -39,4 +39,5 @@ pub enum RunState {
         menu_selection: gui::MainMenuSelection,
     },
     SaveGame,
+    NextLevel,
 }
