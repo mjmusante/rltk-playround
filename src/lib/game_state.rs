@@ -13,8 +13,6 @@ use crate::*;
 use rltk::{GameState, Point, Rltk};
 use specs::prelude::*;
 
-extern crate serde;
-
 impl State {
     fn game_screen(&mut self, ctx: &mut Rltk) {
         draw_map(&self.ecs, ctx);

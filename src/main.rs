@@ -1,4 +1,3 @@
-extern crate serde;
 use rltk::Point;
 use specs::prelude::*;
 
